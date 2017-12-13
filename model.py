@@ -64,6 +64,10 @@ class Transformer:
         with tf.variable_scope('Embedding'):
             # TODO : embedding + positional encoding
 
+            # input-embedding
+
+            # output-embedding
+
             with tf.variable_scope('positional-encoding'):
 
 
@@ -72,6 +76,7 @@ class Transformer:
             # TODO : multi-head attention -> position-wise feed forward
 
             with tf.variable_scope("self-attention"):
+                # q = k = v (embedded output)
 
 
     def _build_decoder(self):
@@ -79,8 +84,11 @@ class Transformer:
             # TODO : masked multi-head attention -> encoder-decoder attention (multi-head) -> position-wise feed forward
 
             with tf.variable_scope("self-attention"):
+                # q = k = v (embedded output)
 
             with tf.variable_scope("encoder-decoder-attention"):
+                # q : from previous decoder layer
+                # k, v : from the output of the encoder
 
 
     def _build_output(self):
