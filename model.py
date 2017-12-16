@@ -52,49 +52,13 @@ class Transformer:
         self.targets = labels
 
     def build_graph(self):
-        self._build_embed()
-        self._build_encoder()
-        self._build_decoder()
+        # self._build_embed()
+        # self._build_encoder()
+        # self._build_decoder()
 
-        if self.mode != tf.estimator.ModeKeys.PREDICT:
-            self._build_loss()
-            self._build_optimizer()
-
-    def _build_embed(self):
-        with tf.variable_scope('Embedding'):
-            # TODO : embedding + positional encoding
-
-            # input-embedding
-
-            # output-embedding
-
-            with tf.variable_scope('positional-encoding'):
-
-
-    def _build_encoder(self):
-        with tf.variable_scope("Encoder"):
-            # TODO : multi-head attention -> position-wise feed forward
-
-            with tf.variable_scope("self-attention"):
-                # q = k = v (embedded output)
-
-
-    def _build_decoder(self):
-        with tf.variable_scope("Decoder"):
-            # TODO : masked multi-head attention -> encoder-decoder attention (multi-head) -> position-wise feed forward
-
-            with tf.variable_scope("self-attention"):
-                # q = k = v (embedded output)
-
-            with tf.variable_scope("encoder-decoder-attention"):
-                # q : from previous decoder layer
-                # k, v : from the output of the encoder
-
-
-    def _build_output(self):
-        with tf.variable_scope("Output"):
-            # TODO: Linear -> Softmax
-            pass
+        # if self.mode != tf.estimator.ModeKeys.PREDICT:
+            # self._build_loss()
+            # self._build_optimizer()
 
     def _build_loss(self):
         with tf.variable_scope('loss'):
