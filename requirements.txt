@@ -1,0 +1,4 @@
+tensorflow
+hb-config
+tqdm
+nltk
