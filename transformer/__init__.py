@@ -33,31 +33,33 @@ class Graph:
         self._build_embed()
         self._build_encoder()
         self._build_decoder()
+        self._build_output()
 
     def _build_embed(self):
-        with tf.variable_scope ("embeddings", dtype=self.dtype) as scope:
+        with tf.variable_scope("Embeddings", dtype=self.dtype) as scope:
             # Word Embedding
             self.embedding_encoder = tf.get_variable(
-                "embedding_encoder", [Config.data.vocab_size, Config.model.model_dim], self.dtype)
+                "embedding_encoder", [Config.data.source_vocab_size, Config.model.model_dim], self.dtype)
             self.embedding_decoder = tf.get_variable(
-                "embedding_decoder", [Config.data.vocab_size, Config.model.model_dim], self.dtype)
+                "embedding_decoder", [Config.data.target_vocab_size, Config.model.model_dim], self.dtype)
 
             # Positional Encoding
-            dim, sentence_length = Config.model.model_dim, Config.data.max_seq_length
+            with tf.variable_scope("positional-encoding"):
+                dim, sentence_length = Config.model.model_dim, Config.data.max_seq_length
 
-            encoded_vec = np.array([pos/10000**(2*i/dim) for pos in range(sentence_length) for i in range(dim)])
-            encoded_vec[::2] = np.sin(encoded_vec[::2])
-            encoded_vec[1::2] = np.cos(encoded_vec[1::2])
+                encoded_vec = np.array([pos/10000**(2*i/dim) for pos in range(sentence_length) for i in range(dim)])
+                encoded_vec[::2] = np.sin(encoded_vec[::2])
+                encoded_vec[1::2] = np.cos(encoded_vec[1::2])
 
-            self.positional_encoding = tf.convert_to_tensor(
-                    encoded_vec.reshape([sentence_length, dim]), name="positional_encoding")
+                self.positional_encoding = tf.convert_to_tensor(
+                        encoded_vec.reshape([sentence_length, dim]), dtype=self.dtype)
 
             # Add
-            position_inputs = tf.tile(tf.range(0, sentence_length), Config.model.batch_size)
+            position_inputs = tf.tile(tf.range(0, sentence_length), [Config.model.batch_size])
             position_inputs = tf.reshape(position_inputs, [Config.model.batch_size, Config.data.max_seq_length])
 
             self.encoder_emb_inp = tf.add(tf.nn.embedding_lookup(self.embedding_encoder, self.encoder_inputs),
-                                          tf.nn.embedding_lookup(self.positional_encoding, encoder_position))
+                                          tf.nn.embedding_lookup(self.positional_encoding, position_inputs))
             self.decoder_emb_inp = tf.add(tf.nn.embedding_lookup(self.embedding_decoder, self.decoder_inputs),
                                           tf.nn.embedding_lookup(self.positional_encoding, position_inputs))
 
@@ -82,19 +84,22 @@ class Graph:
                                                       v=self.encoder_previous_input)
 
                     # Add and Norm (with Residual connection)
-                    output = tf.contrib.layers.layer_norm(
-                            tf.add(self.encoder_previous_input, output))
-                    self.encoder_previous_input = tf.identity(output)
+                    with tf.variable_scope("add-and-norm-1"):
+                        output = tf.contrib.layers.layer_norm(
+                                tf.add(self.encoder_previous_input, output))
+                        self.encoder_previous_input = tf.identity(output)
 
                     # Position-wise FFN
-                    ffn = FFN(w1_dim=Config.model.ffn_dim,
-                              w2_dim=Config.model.model_dim)
-                    output = ffn.dense_relu_dense(output)
+                    with tf.variable_scope("feed-forward"):
+                        ffn = FFN(w1_dim=Config.model.ffn_dim,
+                                  w2_dim=Config.model.model_dim)
+                        output = ffn.dense_relu_dense(output)
 
                     # Add and Norm (with Residual connection)
-                    output = tf.contrib.layers.layer_norm(
-                            tf.add(self.encoder_previous_input, output))
-                    self.encoder_previous_input = tf.identity(output)
+                    with tf.variable_scope("add-and-norm-2"):
+                        output = tf.contrib.layers.layer_norm(
+                                tf.add(self.encoder_previous_input, output))
+                        self.encoder_previous_input = tf.identity(output)
 
             self.encoder_output = tf.identity(output)
 
@@ -117,9 +122,10 @@ class Graph:
                                                       v=self.decoder_previous_input)
 
                     # Add and Norm (with Residual connection)
-                    output = tf.contrib.layers.layer_norm(
-                            tf.add(self.decoder_previous_input, output))
-                    self.decoder_previous_input = tf.identity(output)
+                    with tf.variable_scope("add-and-norm-1"):
+                        output = tf.contrib.layers.layer_norm(
+                                tf.add(self.decoder_previous_input, output))
+                        self.decoder_previous_input = tf.identity(output)
 
                     with tf.variable_scope("encoder-decoder-attention"):
                         attention = Attention(num_heads=Config.model.num_heads,
@@ -131,20 +137,29 @@ class Graph:
                                                       k=self.encoder_output,
                                                       v=self.encoder_output)
 
+                    # Add and Norm (with Residual connection)
+                    with tf.variable_scope("add-and-norm-2"):
+                        output = tf.contrib.layers.layer_norm(
+                                tf.add(self.decoder_previous_input, output))
+                        self.decoder_previous_input = tf.identity(output)
+
                     # Position-wise FFN
-                    ffn = FFN(w1_dim=Config.model.ffn_dim,
-                              w2_dim=Config.model.model_dim)
-                    output = ffn.dense_relu_dense(output)
+                    with tf.variable_scope("feed-forward"):
+                        ffn = FFN(w1_dim=Config.model.ffn_dim,
+                                  w2_dim=Config.model.model_dim)
+                        output = ffn.dense_relu_dense(output)
 
                     # Add and Norm (with Residual connection)
-                    output = tf.contrib.layers.layer_norm(
-                            tf.add(self.encoder_previous_input, output))
-                    self.encoder_previous_input = tf.identity(output)
+                    with tf.variable_scope("add-and-norm-3"):
+                        output = tf.contrib.layers.layer_norm(
+                                tf.add(self.encoder_previous_input, output))
+                        self.encoder_previous_input = tf.identity(output)
 
             self.decoder_output = tf.identity(output)
 
-
     def _build_output(self):
         with tf.variable_scope("Output"):
-            output = tf.layers(self.decoder_output, Config.data.target_vocab_size)
-            self.logits = tf.nn.softmax(output)
+            flatted_output = tf.reshape(self.decoder_output, [Config.model.batch_size, -1])
+            self.logits = tf.layers.dense(flatted_output, Config.data.target_vocab_size)
+
+        self.train_predictions = tf.argmax(self.logits[0], axis=0, name="train/pred_0")

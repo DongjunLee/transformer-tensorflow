@@ -4,12 +4,11 @@ from __future__ import print_function
 from hbconfig import Config
 import tensorflow as tf
 
-from model_helper import Encoder
-from model_helper import Episode
+import transformer
 
 
 
-class Transformer:
+class Model:
 
     def __init__(self):
         pass
@@ -31,12 +30,9 @@ class Transformer:
         else:
             return tf.estimator.EstimatorSpec(
                 mode=mode,
-                predictions=self.predictions,
+                # predictions=self.predictions,
                 loss=self.loss,
-                train_op=self.train_op,
-                eval_metric_ops={
-                    # implements BLEU metric
-                }
+                train_op=self.train_op
             )
 
     def _set_batch_size(self, mode):
@@ -46,32 +42,35 @@ class Transformer:
             Config.model.batch_size = Config.train.batch_size
 
     def _init_placeholder(self, features, labels):
-        self.input_data = features
         if type(features) == dict:
-            self.input_data = features["input_data"]
-        self.targets = labels
+            self.encoder_inputs = features["enc_inputs"]
+            self.decoder_inputs = features["dec_inputs"]
+
+        if self.mode != tf.estimator.ModeKeys.PREDICT:
+            self.targets = labels
 
     def build_graph(self):
-        # self._build_embed()
-        # self._build_encoder()
-        # self._build_decoder()
+        graph = transformer.Graph(
+                    encoder_inputs=self.encoder_inputs,
+                    decoder_inputs=self.decoder_inputs)
+        graph.build(self.mode)
 
-        # if self.mode != tf.estimator.ModeKeys.PREDICT:
-            # self._build_loss()
-            # self._build_optimizer()
+        if self.mode == tf.estimator.ModeKeys.PREDICT:
+            self.predictions = graph.predictions
+        else:
+            # self.train_predictions = graph.train_predictions
+            self._build_loss(graph.logits)
+            self._build_optimizer()
 
-    def _build_loss(self):
+    def _build_loss(self, logits):
         with tf.variable_scope('loss'):
-            cross_entropy = tf.losses.sparse_softmax_cross_entropy(
-                    self.targets,
-                    self.logits,
+            self.loss = tf.losses.sparse_softmax_cross_entropy(
+                    labels=self.targets,
+                    logits=logits,
                     scope="cross-entropy")
-            reg_term = tf.reduce_sum(tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
-
-            self.loss = tf.add(cross_entropy, reg_term)
 
     def _build_optimizer(self):
-        self.train_op = layers.optimize_loss(
+        self.train_op = tf.contrib.layers.optimize_loss(
             self.loss, tf.train.get_global_step(),
             optimizer=Config.train.get('optimizer', 'Adam'),
             learning_rate=Config.train.learning_rate,
