@@ -9,27 +9,29 @@ TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1
 
 - Python 3.6
 - TensorFlow 1.4
-- hb-config (Singleton Config)
+- [hb-config](https://github.com/hb-research/hb-config) (Singleton Config)
 - nltk (tokenizer)
 - tqdm (progress bar)
 
 
 ## Project Structure
 
-  .
-    ├── config                  # Config files (.yml, .json) using with [hb-config](https://github.com/hb-research/hb-config)
+    .
+    ├── config                  # Config files (.yml, .json) using with hb-config
     ├── transformer             # transformer architecture graphs (from input to logits)
-    ├── data_loader.py          # raw_date -> precossed_data -> generate_batch (using [Dataset](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator))
+    ├── data_loader.py          # raw_date -> precossed_data -> generate_batch Dataset(using Dataset)
     ├── hook.py                 # training or test hook feature (eg. print_variables)
-    ├── main.py                 # define [experiment_fn](https://www.tensorflow.org/api_docs/python/tf/contrib/learn/Experiment)
-    └── model.py                # define [EstimatorSpec](https://www.tensorflow.org/api_docs/python/tf/estimator/EstimatorSpec)      
+    ├── main.py                 # define experiment_fn
+    └── model.py                # define EstimatorSpec      
+
+Reference : [hb-config](https://github.com/hb-research/hb-config), [Dataset](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator), [experiments_fn](https://www.tensorflow.org/api_docs/python/tf/contrib/learn/Experiment), [EstimatorSpec](https://www.tensorflow.org/api_docs/python/tf/estimator/EstimatorSpec)
 
 ## Todo
 
 - Implements Multi-Head num_heads > 1 case (split -> ... -> concat)
 - Implements Multi-Head masked opt
 - Implements Eval flow (need recursive process) with BLEU
-- Make English-Korean Corpus based on [Cornell_Movie-Dialogs_Corpus](https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html)
+- Make English-Korean Corpus based on [Cornell\_Movie\-Dialogs\_Corpus](https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html)
 
 
 ## Config
@@ -109,3 +111,7 @@ python main.py --config check_tiny --mode train
 - [hb-research/notes - Attention Is All You Need](https://github.com/hb-research/notes)
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (2017. 6) by A Vaswani (Google Brain Team)
 - [tensor2tensor](https://github.com/tensorflow/tensor2tensor) - A library for generalized sequence to sequence models (official code)
+
+## Author
+
+Dongjun Lee (humanbrain.djlee@gmail.com)
