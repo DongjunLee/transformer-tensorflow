@@ -19,7 +19,7 @@ TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1
     .
     ├── config                  # Config files (.yml, .json) using with hb-config
     ├── transformer             # transformer architecture graphs (from input to logits)
-    ├── data_loader.py          # raw_date -> precossed_data -> generate_batch Dataset(using Dataset)
+    ├── data_loader.py          # raw_date -> precossed_data -> generate_batch (using Dataset)
     ├── hook.py                 # training or test hook feature (eg. print_variables)
     ├── main.py                 # define experiment_fn
     └── model.py                # define EstimatorSpec      
