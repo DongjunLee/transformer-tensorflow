@@ -1,4 +1,4 @@
-# Dynamic Memory Network
+# transformer
 
 TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1706.03762). (2017. 6)
 
@@ -9,25 +9,32 @@ TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1
 
 - Python 3.6
 - TensorFlow 1.4
-- hb-config
-- nltk
-- tqdm
+- hb-config (Singleton Config)
+- nltk (tokenizer)
+- tqdm (progress bar)
 
 
-## Features
+## Project Structure
 
-- Using Higher-APIs in TensorFlow
-	- [Estimator](https://www.tensorflow.org/api_docs/python/tf/estimator/Estimator)
-	- [Experiment](https://www.tensorflow.org/api_docs/python/tf/contrib/learn/Experiment)
-	- [Dataset](https://www.tensorflow.org/api_docs/python/tf/contrib/data/Dataset)
+  .
+    ├── config                  # Config files (.yml, .json) using with [hb-config](https://github.com/hb-research/hb-config)
+    ├── transformer             # transformer architecture graphs (from input to logits)
+    ├── data_loader.py          # raw_date -> precossed_data -> generate_batch (using [Dataset](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator))
+    ├── hook.py                 # training or test hook feature (eg. print_variables)
+    ├── main.py                 # define [experiment_fn](https://www.tensorflow.org/api_docs/python/tf/contrib/learn/Experiment)
+    └── model.py                # define [EstimatorSpec](https://www.tensorflow.org/api_docs/python/tf/estimator/EstimatorSpec)      
 
 ## Todo
 
 - Implements Multi-Head num_heads > 1 case (split -> ... -> concat)
 - Implements Multi-Head masked opt
+- Implements Eval flow (need recursive process) with BLEU
+- Make English-Korean Corpus based on [Cornell_Movie-Dialogs_Corpus](https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html)
 
 
 ## Config
+
+Can control all **Experimental environment**.
 
 example: check_tiny.yml
 
@@ -73,8 +80,20 @@ Install requirements.
 
 Then, start train and evalueate model
 ```
-python main.py --config check-tiny --mode train_and_evaluate
+python main.py --config check_tiny --mode train
 ```
+
+### Experiments modes
+
+- `evaluate` : Evaluate on the evaluation data.
+- `extend_train_hooks` : Extends the hooks for training.
+- `reset_export_strategies` : Resets the export strategies with the new_export_strategies.
+- `run_std_server` : Starts a TensorFlow server and joins the serving thread.
+- `test` : Tests training, evaluating and exporting the estimator for a single step.
+- `train` : Fit the estimator using the training data.
+- `train_and_evaluate` : Interleaves training and evaluation.
+
+---
 
 ### Tensorboar
 
