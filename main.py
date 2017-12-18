@@ -7,7 +7,6 @@ from hbconfig import Config
 import tensorflow as tf
 
 import data_loader
-import dataset
 from model import Model
 import hook
 
@@ -30,8 +29,8 @@ def experiment_fn(run_config, params):
 
     train_data, test_data = data_loader.make_train_and_test_set()
 
-    train_input_fn, train_input_hook = dataset.get_inputs(train_data, scope="train")
-    test_input_fn, test_input_hook = dataset.get_inputs(test_data, scope="test")
+    train_input_fn, train_input_hook = data_loader.get_dataset_batch(train_data, scope="train")
+    test_input_fn, test_input_hook = data_loader.get_dataset_batch(test_data, scope="test")
 
     experiment = tf.contrib.learn.Experiment(
         estimator=estimator,
