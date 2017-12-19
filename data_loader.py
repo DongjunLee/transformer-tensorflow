@@ -268,7 +268,6 @@ def process_data():
     token2id('test', 'dec')
 
     make_decoder_seq('train_ids.enc', 'train_ids.dec')
-    make_decoder_seq('test_ids.enc', 'test_ids.dec')
 
 
 def make_train_and_test_set(shuffle=True):

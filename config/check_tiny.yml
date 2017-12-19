@@ -11,10 +11,10 @@ data:
 model:
   num_layers: 1
   model_dim: 16
-  num_heads: 1
+  num_heads: 2
   linear_key_dim: 10
-  linear_value_dim: 10
-  ffn_dim: 16
+  linear_value_dim: 12
+  ffn_dim: 20
   dropout: 0.2
 
 train:
