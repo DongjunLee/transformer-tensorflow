@@ -28,6 +28,9 @@ class Attention:
                  linear_value_dim=50,
                  model_dim=100):
 
+        assert linear_key_dim % num_heads == 0
+        assert linear_value_dim % num_heads == 0
+
         self.num_heads = num_heads
         self.masked = masked
         self.linear_key_dim = linear_key_dim
@@ -35,35 +38,51 @@ class Attention:
         self.model_dim = model_dim
 
     def multi_head(self, q, k, v):
-        self.q = q
-        self.k = k
-        self.v = v
-
-        self._linear_projection()
-        # TODO: multi-head split
-        output = self._scaled_dot_product()
-        # TODO: concat
+        q, k, v = self._linear_projection(q, k, v)
+        qs, ks, vs = self._split_heads(q, k, v)
+        outputs = self._scaled_dot_product(qs, ks, vs)
+        output = self._concat_heads(outputs)
 
         return tf.layers.dense(output, self.model_dim)
 
-    def _linear_projection(self):
-        self.q = tf.layers.dense(self.q, self.linear_key_dim)
-        self.k = tf.layers.dense(self.q, self.linear_key_dim)
-        self.v = tf.layers.dense(self.q, self.linear_value_dim)
+    def _linear_projection(self, q, k, v):
+        q = tf.layers.dense(q, self.linear_key_dim, use_bias=False)
+        k = tf.layers.dense(k, self.linear_key_dim, use_bias=False)
+        v = tf.layers.dense(v, self.linear_value_dim, use_bias=False)
+        return q, k, v
 
-    def _scaled_dot_product(self):
-        o1 = tf.matmul(self.q, tf.transpose(self.k, [0, 2, 1]))
-        o2 = o1 / (self.linear_key_dim**0.5)
+    def _split_heads(self, q, k, v):
+
+        def split_last_dimension_then_transpose(tensor, num_heads, dim):
+            t_shape = tensor.get_shape().as_list()
+            tensor = tf.reshape(tensor, t_shape[:-1] + [num_heads, dim // num_heads])
+            return tf.transpose(tensor, [0, 2, 1, 3]) # [batch_size, num_heads, max_seq_len, dim]
+
+        qs = split_last_dimension_then_transpose(q, self.num_heads, self.linear_key_dim)
+        ks = split_last_dimension_then_transpose(k, self.num_heads, self.linear_key_dim)
+        vs = split_last_dimension_then_transpose(v, self.num_heads, self.linear_value_dim)
+
+        return qs, ks, vs
+
+    def _scaled_dot_product(self, qs, ks, vs):
+        key_dim_per_head = self.linear_key_dim // self.num_heads
+
+        o1 = tf.matmul(qs, ks, transpose_b=True)
+        o2 = o1 / (key_dim_per_head**0.5)
 
         if self.masked:
             # TODO: implements masked
             pass
 
         o3 = tf.nn.softmax(o2)
-        return tf.matmul(o3, self.v)
+        return tf.matmul(o3, vs)
 
+    def _concat_heads(self, outputs):
 
+        def transpose_then_concat_last_two_dimenstion(tensor):
+            tensor = tf.transpose(tensor, [0, 2, 1, 3]) # [batch_size, max_seq_len, num_heads, dim]
+            t_shape = tensor.get_shape().as_list()
+            num_heads, dim = t_shape[-2:]
+            return tf.reshape(tensor, t_shape[:-2] + [num_heads * dim])
 
-
-
-
+        return transpose_then_concat_last_two_dimenstion(outputs)

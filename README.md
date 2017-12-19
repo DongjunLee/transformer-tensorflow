@@ -28,7 +28,6 @@ Reference : [hb-config](https://github.com/hb-research/hb-config), [Dataset](htt
 
 ## Todo
 
-- Implements Multi-Head num_heads > 1 case (split -> ... -> concat)
 - Implements Multi-Head masked opt
 - Implements Eval flow (need recursive process) with BLEU
 - Make English-Korean Corpus based on [Cornell\_Movie\-Dialogs\_Corpus](https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html)
