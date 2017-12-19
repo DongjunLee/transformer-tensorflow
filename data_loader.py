@@ -45,8 +45,10 @@ def get_dataset_batch(data, buffer_size=10000, batch_size=64, scope="train"):
                 tf.int32, [None, None], name="enc_placeholder")
             dec_placeholder = tf.placeholder(
                 tf.int32, [None, None], name="dec_placeholder")
+
+            target_shape = [None] * len(targets.shape)
             target_placeholder = tf.placeholder(
-                tf.int32, [None], name="target_placeholder")
+                tf.int32, target_shape, name="target_placeholder")
 
             # Build dataset iterator
             dataset = tf.data.Dataset.from_tensor_slices(
@@ -274,16 +276,10 @@ def make_train_and_test_set(shuffle=True):
     print("make Training data and Test data Start....")
 
     train_enc, train_dec, train_y = load_data('train_ids.enc', 'train_ids.dec')
-    test_enc, test_dec, test_y = load_data('test_ids.enc', 'test_ids.dec')
+    test_enc, test_dec, test_y = load_data('test_ids.enc', 'test_ids.dec', train=False)
 
-    if len(train_enc) == len(train_y) and len(test_enc) == len(test_y):
-        pass
-    else:
-        train_count = min(len(train_enc), len(train_y))
-        test_count = min(len(test_enc), len(test_y))
-
-        train_enc, train_dec, train_y = train_enc[:train_count], train_dec[:train_count], train_y[:train_count]
-        test_enc, test_dec, test_y = test_enc[:test_count], test_dec[:test_count], test_y[:test_count]
+    assert len(train_enc) == len(train_y)
+    assert len(test_enc) == len(test_y)
 
     print(f"train data count : {len(train_y)}")
     print(f"test data count : {len(test_y)}")
@@ -299,7 +295,7 @@ def make_train_and_test_set(shuffle=True):
         return ((train_enc, train_dec, train_y),
                 (test_enc, test_dec, test_y))
 
-def load_data(enc_fname, dec_fname):
+def load_data(enc_fname, dec_fname, train=True):
     enc_input_data = open(os.path.join(Config.data.processed_path, enc_fname), 'r')
     dec_input_data = open(os.path.join(Config.data.processed_path, dec_fname), 'r')
 
@@ -307,8 +303,12 @@ def load_data(enc_fname, dec_fname):
     for e_line, d_line in tqdm(zip(enc_input_data.readlines(), dec_input_data.readlines())):
         e_ids = [int(id_) for id_ in e_line.split()]
 
-        d_id_line, t_id = d_line.split("\t")
-        d_ids = [int(id_) for id_ in d_id_line.split()]
+        if train:
+            d_id_line, t_id = d_line.split("\t")
+            d_ids = [int(id_) for id_ in d_id_line.split()]
+        else:
+            t_id = [int(id_) for id_ in d_line.split()]
+            d_ids = [Config.data.START_ID]
 
         if len(e_ids) == 0 or len(d_ids) == 0:
             continue
@@ -316,6 +316,10 @@ def load_data(enc_fname, dec_fname):
         if len(e_ids) <= Config.data.max_seq_length and len(d_ids) < Config.data.max_seq_length:
             enc_data.append(_pad_input(e_ids, Config.data.max_seq_length))
             dec_data.append(_pad_input(d_ids, Config.data.max_seq_length))
+
+            if type(t_id) == list:
+                t_id = _pad_input(t_id, Config.data.max_seq_length)
+
             target_data.append(t_id)
 
     print(f"load data from {enc_fname}, {dec_fname}...")
