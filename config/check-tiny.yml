@@ -1,4 +1,6 @@
 data:
+  base_path: 'data/'
+  raw_data_path: 'tiny_kor_eng'
   processed_path: 'tiny_processed_data'
   word_threshold: 1
 
@@ -10,18 +12,18 @@ data:
 model:
   batch_size: 4
   num_layers: 2
-  model_dim: 16
-  num_heads: 2
-  linear_key_dim: 10
-  linear_value_dim: 12
-  ffn_dim: 20
+  model_dim: 32
+  num_heads: 4
+  linear_key_dim: 20
+  linear_value_dim: 24
+  ffn_dim: 30
   dropout: 0.2
 
 train:
-  learning_rate: 0.00001
+  learning_rate: 0.0001
   optimizer: 'Adam'
 
-  train_steps: 50000
+  train_steps: 15000
   model_dir: 'logs/check_tiny'
 
   save_checkpoints_steps: 1000
