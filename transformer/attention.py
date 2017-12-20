@@ -72,7 +72,7 @@ class Attention:
 
         if self.masked:
             # TODO: implements masked
-            pass
+            raise NotImplementedError("i will implement it!")
 
         o3 = tf.nn.softmax(o2)
         return tf.matmul(o3, vs)

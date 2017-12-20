@@ -15,13 +15,4 @@ class FFN:
         return tf.layers.dense(output, self.w2_dim)
 
     def conv_relu_conv(self):
-        pass
-
-
-class Add_and_Norm:
-    """Add_and_Norm class (Residual connection then LayerNorm)"""
-
-    def __init__(self):
-        pass
-
-
+        raise NotImplementedError("i will implement it!")
