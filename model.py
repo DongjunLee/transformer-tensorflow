@@ -45,34 +45,33 @@ class Model:
 
     def build_graph(self):
         graph = transformer.Graph(self.mode)
-        graph.build(encoder_inputs=self.encoder_inputs,
+        output = graph.build(encoder_inputs=self.encoder_inputs,
                     decoder_inputs=self.decoder_inputs)
 
         if self.mode == tf.estimator.ModeKeys.TRAIN:
-            self._build_loss(graph.logits)
+            self._build_loss(output)
             self._build_optimizer()
         else:
-            def _filled_next_token(decoder_inputs, logits, decoder_index):
+            def _filled_next_token(inputs, logits, decoder_index):
                 next_token = tf.reshape(tf.argmax(logits, axis=1, output_type=tf.int32), [Config.model.batch_size, 1])
                 left_zero_pads = tf.zeros([Config.model.batch_size, decoder_index], dtype=tf.int32)
                 right_zero_pads = tf.zeros([Config.model.batch_size, (Config.data.max_seq_length-decoder_index-1)], dtype=tf.int32)
                 next_token = tf.concat((left_zero_pads, next_token, right_zero_pads), axis=1)
 
-                return decoder_inputs + next_token
+                return inputs + next_token
 
             encoder_outputs = graph.encoder_outputs
-            decoder_inputs = _filled_next_token(self.decoder_inputs, graph.logits, 1)
-            sequence_logits = tf.reshape(graph.logits, [-1, 1, Config.data.target_vocab_size])
+            decoder_inputs = _filled_next_token(self.decoder_inputs, output, 1)
+            sequence_logits = tf.reshape(output, [-1, 1, Config.data.target_vocab_size])
 
             # predict output with loop. [encoder_outputs, decoder_inputs (filled next token)]
             for i in range(2, Config.data.max_seq_length):
-
-                decoder_emb_inp = graph.build_embed(self.decoder_inputs, encoder=False, reuse=True)
+                decoder_emb_inp = graph.build_embed(decoder_inputs, encoder=False, reuse=True)
                 decoder_outputs = graph.build_decoder(decoder_emb_inp, encoder_outputs, reuse=True)
-                graph.build_output(decoder_outputs, reuse=True)
+                next_output = graph.build_output(decoder_outputs, reuse=True)
 
-                decoder_inputs = _filled_next_token(decoder_inputs, graph.logits, i)
-                sequence_logits = tf.concat((sequence_logits, tf.reshape(graph.logits, [-1, 1, Config.data.target_vocab_size])),
+                decoder_inputs = _filled_next_token(decoder_inputs, next_output, i)
+                sequence_logits = tf.concat((sequence_logits, tf.reshape(next_output, [-1, 1, Config.data.target_vocab_size])),
                                             axis=1)
 
             self._build_loss(sequence_logits)
@@ -117,8 +116,18 @@ class Model:
                        updates_collections=None, name=None):
 
             def _nltk_blue_score(labels, predictions):
-                labels = list(map(lambda x: [x], labels.tolist()))
-                predictions = predictions.tolist()
+                rev_target_vocab = Config.data.rev_target_vocab
+
+                labels = [
+                    [[rev_target_vocab.get(w_id, "") for w_id in label]]
+                    for label in labels.tolist()]
+                predictions = [
+                    [rev_target_vocab.get(w_id, "") for w_id in prediction]
+                    for prediction in predictions.tolist()]
+
+                if Config.train.print_verbose:
+                    print("label: ", labels[0][0])
+                    print("prediction: ", predictions[0])
 
                 return nltk.translate.bleu_score.corpus_bleu(labels, predictions)
 

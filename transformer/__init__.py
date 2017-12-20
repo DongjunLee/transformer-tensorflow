@@ -24,7 +24,7 @@ class Graph:
 
         decoder_emb_inp = self.build_embed(decoder_inputs, encoder=False, reuse=True)
         decoder_outputs = self.build_decoder(decoder_emb_inp, self.encoder_outputs)
-        self.build_output(decoder_outputs)
+        return self.build_output(decoder_outputs)
 
     def build_embed(self, inputs, encoder=True, reuse=False):
         with tf.variable_scope("Embeddings", reuse=reuse, dtype=self.dtype) as scope:
@@ -77,6 +77,7 @@ class Graph:
     def build_output(self, decoder_outputs, reuse=False):
         with tf.variable_scope("Output", reuse=reuse):
             flatted_output = tf.reshape(decoder_outputs, [Config.model.batch_size, -1])
-            self.logits = tf.layers.dense(flatted_output, Config.data.target_vocab_size)
+            logits = tf.layers.dense(flatted_output, Config.data.target_vocab_size)
 
-        self.train_predictions = tf.argmax(self.logits[0], axis=0, name="train/pred_0")
+        self.train_predictions = tf.argmax(logits[0], axis=0, name="train/pred_0")
+        return logits
