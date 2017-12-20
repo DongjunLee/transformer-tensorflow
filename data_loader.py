@@ -54,7 +54,11 @@ def get_dataset_batch(data, buffer_size=10000, batch_size=64, scope="train"):
             dataset = tf.data.Dataset.from_tensor_slices(
                 (enc_placeholder, dec_placeholder, target_placeholder))
 
-            dataset = dataset.repeat(None)  # Infinite iterations
+            if scope == "train":
+                dataset = dataset.repeat(None)  # Infinite iterations
+            else:
+                dataset = dataset.repeat(1)  # one Epoch
+
             dataset = dataset.shuffle(buffer_size=buffer_size)
             dataset = dataset.batch(batch_size)
 
@@ -84,8 +88,6 @@ def get_dataset_batch(data, buffer_size=10000, batch_size=64, scope="train"):
 
 
 def prepare_dataset(questions, answers):
-    # create path to store all the train & test encoder & decoder
-    make_dir(Config.data.processed_path)
 
     # random convos to create the test set
     test_ids = random.sample([i for i in range(len(questions))], Config.data.testset_size)
@@ -93,7 +95,7 @@ def prepare_dataset(questions, answers):
     filenames = ['train.enc', 'train.dec', 'test.enc', 'test.dec']
     files = []
     for filename in filenames:
-        files.append(open(os.path.join(Config.data.processed_path, filename), 'wb'))
+        files.append(open(os.path.join(Config.data.base_path, Config.data.processed_path, filename), 'wb'))
 
     for i in tqdm(range(len(questions))):
 
@@ -153,8 +155,8 @@ def build_vocab(in_fname, out_fname, normalize_digits=True):
                     vocab[token] += 1
         return vocab
 
-    in_path = os.path.join(Config.data.processed_path, in_fname)
-    out_path = os.path.join(Config.data.processed_path, out_fname)
+    in_path = os.path.join(Config.data.base_path, Config.data.raw_data_path, in_fname)
+    out_path = os.path.join(Config.data.base_path, Config.data.raw_data_path, out_fname)
 
     source_vocab = count_vocab(in_path)
     target_vocab = count_vocab(out_path)
@@ -162,7 +164,7 @@ def build_vocab(in_fname, out_fname, normalize_digits=True):
     print("total vocab size:", len(source_vocab), len(target_vocab))
 
     def write_vocab(fname, sorted_vocab):
-        dest_path = os.path.join(Config.data.processed_path, fname)
+        dest_path = os.path.join(Config.data.base_path, Config.data.processed_path, fname)
         with open(dest_path, 'wb') as f:
             f.write(('<pad>' + '\n').encode('utf-8'))
             f.write(('<unk>' + '\n').encode('utf-8'))
@@ -184,7 +186,7 @@ def build_vocab(in_fname, out_fname, normalize_digits=True):
 
 def load_vocab(vocab_fname):
     print("load vocab ...")
-    with open(os.path.join(Config.data.processed_path, vocab_fname), 'rb') as f:
+    with open(os.path.join(Config.data.base_path, Config.data.processed_path, vocab_fname), 'rb') as f:
         words = f.read().decode('utf-8').splitlines()
         print("vocab size:", len(words))
     return {words[i]: i for i in range(len(words))}
@@ -207,8 +209,8 @@ def token2id(data, mode):
     out_path = data + '_ids.' + mode
 
     vocab = load_vocab(vocab_path)
-    in_file = open(os.path.join(Config.data.processed_path, in_path), 'rb')
-    out_file = open(os.path.join(Config.data.processed_path, out_path), 'wb')
+    in_file = open(os.path.join(Config.data.base_path, Config.data.raw_data_path, in_path), 'rb')
+    out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, out_path), 'wb')
 
     lines = in_file.read().decode('utf-8').splitlines()
     for line in tqdm(lines):
@@ -225,14 +227,14 @@ def token2id(data, mode):
         out_file.write(b' '.join(str(id_).encode('cp1252') for id_ in ids) + b'\n')
 
 def make_decoder_seq(enc_fname, dec_fname):
-    enc_file = open(os.path.join(Config.data.processed_path, enc_fname), 'rb')
-    dec_file = open(os.path.join(Config.data.processed_path, dec_fname), 'rb')
+    enc_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'rb')
+    dec_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'rb')
 
     enc_data = enc_file.read().decode('utf-8').splitlines()
     dec_data = dec_file.read().decode('utf-8').splitlines()
 
-    enc_out_file = open(os.path.join(Config.data.processed_path, enc_fname), 'wb')
-    dec_out_file = open(os.path.join(Config.data.processed_path, dec_fname), 'wb')
+    enc_out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'wb')
+    dec_out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'wb')
 
     for enc, dec in zip(enc_data, dec_data):
         seq_dec = []
@@ -261,6 +263,9 @@ def prepare_raw_data():
 
 def process_data():
     print('Preparing data to be model-ready ...')
+
+    # create path to store all the train & test encoder & decoder
+    make_dir(Config.data.base_path + Config.data.processed_path)
 
     build_vocab('train.enc', 'train.dec')
 
@@ -298,8 +303,8 @@ def make_train_and_test_set(shuffle=True):
                 (test_enc, test_dec, test_y))
 
 def load_data(enc_fname, dec_fname, train=True):
-    enc_input_data = open(os.path.join(Config.data.processed_path, enc_fname), 'r')
-    dec_input_data = open(os.path.join(Config.data.processed_path, dec_fname), 'r')
+    enc_input_data = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'r')
+    dec_input_data = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'r')
 
     enc_data, dec_data, target_data = [], [], []
     for e_line, d_line in tqdm(zip(enc_input_data.readlines(), dec_input_data.readlines())):
@@ -337,7 +342,7 @@ def set_max_seq_length(dataset_fnames):
     max_seq_length = Config.data.get('max_seq_length', 10)
 
     for fname in dataset_fnames:
-        input_data = open(os.path.join(Config.data.processed_path, fname), 'r')
+        input_data = open(os.path.join(Config.data.base_path, Config.data.processed_path, fname), 'r')
 
         for line in input_data.readlines():
             ids = [int(id_) for id_ in line.split()]

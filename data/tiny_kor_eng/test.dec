@@ -1,0 +1,21 @@
+Hello. I'm glad to see you.
+Deep Learning is a really interesting field.
+So I study by implementing a model.
+The title of the paper is 'Attention Is All You Need'.
+The author did not use RNN or CNN, which were previously used in Seq2Seq.
+Instead, it is consist of FeedForward and Attention.
+And use sinusodial to put the position of the sentence into the input value.
+The key Attention is organized as follows.
+A attention function can be described by mapping a set of query and key value pairs to the output.
+Where queries, keys, values, and outputs are all vectors.
+The output is calculated as the weighted sum of the values assigned to each value, calculated by the query compatibility function with that key.
+If you increase the head number here, both speed and performance will increase.
+MultI-head attachments allow the model to focus jointly on information from different presentation subarras at different locations.
+The ability to parallel also greatly reduces training time.
+Google Research blogs show great performance with the 'Coreference Resolution'.
+I hope these codes help you.
+Remember to give the repository a star.
+And if you have any model problems or need improvement, please do not hesitate to drop me a push request.
+These little datasets that are translated in English in Hangul up to here.
+Thank you for reading this dataset.
+
