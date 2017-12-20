@@ -116,14 +116,22 @@ class Model:
                        updates_collections=None, name=None):
 
             def _nltk_blue_score(labels, predictions):
+
+                # slice after <eos>
+                predictions = predictions.tolist()
+                for i in range(len(predictions)):
+                    prediction = predictions[i]
+                    if Config.data.EOS_ID in prediction:
+                        predictions[i] = prediction[:prediction.index(Config.data.EOS_ID)+1]
+
                 rev_target_vocab = Config.data.rev_target_vocab
 
                 labels = [
-                    [[rev_target_vocab.get(w_id, "") for w_id in label]]
+                    [[rev_target_vocab.get(w_id, "") for w_id in label if w_id != Config.data.PAD_ID]]
                     for label in labels.tolist()]
                 predictions = [
                     [rev_target_vocab.get(w_id, "") for w_id in prediction]
-                    for prediction in predictions.tolist()]
+                    for prediction in predictions]
 
                 if Config.train.print_verbose:
                     print("label: ", labels[0][0])
