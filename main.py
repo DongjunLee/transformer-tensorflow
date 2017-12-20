@@ -5,6 +5,7 @@ import logging
 
 from hbconfig import Config
 import tensorflow as tf
+from tensorflow.python import debug as tf_debug
 
 import data_loader
 from model import Model
@@ -24,11 +25,12 @@ def experiment_fn(run_config, params):
     source_vocab = data_loader.load_vocab("source_vocab")
     target_vocab = data_loader.load_vocab("target_vocab")
 
+    Config.data.rev_source_vocab = get_rev_vocab(source_vocab)
+    Config.data.rev_target_vocab = get_rev_vocab(target_vocab)
     Config.data.source_vocab_size = len(source_vocab)
     Config.data.target_vocab_size = len(target_vocab)
 
     train_data, test_data = data_loader.make_train_and_test_set()
-
     train_input_fn, train_input_hook = data_loader.get_dataset_batch(train_data,
                                                                      batch_size=Config.model.batch_size,
                                                                      scope="train")
@@ -36,23 +38,31 @@ def experiment_fn(run_config, params):
                                                                    batch_size=Config.model.batch_size,
                                                                    scope="test")
 
+    train_hooks = [train_input_hook]
+    if Config.train.print_verbose:
+        train_hooks.append(hook.print_variables(
+            variables=['train/enc_0'],
+            rev_vocab=get_rev_vocab(source_vocab),
+            every_n_iter=Config.train.check_hook_n_iter))
+        train_hooks.append(hook.print_variables(
+            variables=['train/dec_0', 'train/target_0', 'train/pred_0'],
+            rev_vocab=get_rev_vocab(target_vocab),
+            every_n_iter=Config.train.check_hook_n_iter))
+    # if Config.train.debug:
+        # train_hooks.append(tf_debug.LocalCLIDebugHook())
+
+    eval_hooks = [test_input_hook]
+    if Config.train.debug:
+        eval_hooks.append(tf_debug.LocalCLIDebugHook())
+
     experiment = tf.contrib.learn.Experiment(
         estimator=estimator,
         train_input_fn=train_input_fn,
         eval_input_fn=test_input_fn,
         train_steps=Config.train.train_steps,
         min_eval_frequency=Config.train.min_eval_frequency,
-        train_monitors=[
-            train_input_hook,
-            hook.print_variables(
-                variables=['train/enc_0'],
-                rev_vocab=get_rev_vocab(source_vocab),
-                every_n_iter=Config.train.check_hook_n_iter),
-            hook.print_variables(
-                variables=['train/dec_0', 'train/target_0', 'train/pred_0'],
-                rev_vocab=get_rev_vocab(target_vocab),
-                every_n_iter=Config.train.check_hook_n_iter)],
-        eval_hooks=[test_input_hook]
+        train_monitors=train_hooks,
+        eval_hooks=eval_hooks
     )
     return experiment
 

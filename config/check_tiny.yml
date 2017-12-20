@@ -1,6 +1,5 @@
 data:
   processed_path: 'tiny_processed_data'
-  max_seq_length: 20
   word_threshold: 1
 
   PAD_ID: 0
@@ -20,9 +19,14 @@ model:
 
 train:
   learning_rate: 0.00001
+  optimizer: 'Adam'
+
   train_steps: 50000
   model_dir: 'logs/check_tiny'
+
   save_checkpoints_steps: 1000
   check_hook_n_iter: 100
   min_eval_frequency: 100
-  optimizer: 'Adam'
+
+  print_verbose: True
+  debug: False

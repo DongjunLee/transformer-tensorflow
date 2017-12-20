@@ -28,8 +28,7 @@ Reference : [hb-config](https://github.com/hb-research/hb-config), [Dataset](htt
 
 ## Todo
 
-- Implements Multi-Head masked opt
-- Implements Eval flow (need recursive process) with BLEU
+- Implements Multi-Head Masked opt
 - Make English-Korean Corpus based on [Cornell\_Movie\-Dialogs\_Corpus](https://www.cs.cornell.edu/~cristian/Cornell_Movie-Dialogs_Corpus.html)
 
 
@@ -51,26 +50,29 @@ data:
   EOS_ID: 3
 
 model:
-  num_layers: 1
+  batch_size: 4
+  num_layers: 2
   model_dim: 16
-  num_heads: 1
+  num_heads: 2
   linear_key_dim: 10
-  linear_value_dim: 10
-  ffn_dim: 16
+  linear_value_dim: 12
+  ffn_dim: 20
   dropout: 0.2
 
 train:
-  batch_size: 2
   learning_rate: 0.00001
+  optimizer: 'Adam'  ('Adagrad', 'Adam', 'Ftrl', 'Momentum', 'RMSProp', 'SGD')
+  
   train_steps: 50000
   model_dir: 'logs/check_tiny'
+  
   save_checkpoints_steps: 1000
   check_hook_n_iter: 100
   min_eval_frequency: 100
-  optimizer: 'Adam'  ('Adagrad', 'Adam', 'Ftrl', 'Momentum', 'RMSProp', 'SGD')
-
-eval:
-  batch_size: -1   (Using all test data)
+  
+  print_verbose: True
+  debug: False
+  
 ```
 
 ## Usage
@@ -108,7 +110,7 @@ python main.py --config check_tiny --mode train
 ## Reference
 
 - [hb-research/notes - Attention Is All You Need](https://github.com/hb-research/notes)
-- [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (2017. 6) by A Vaswani (Google Brain Team)
+- [Paper - Attention Is All You Need](https://arxiv.org/abs/1706.03762) (2017. 6) by A Vaswani (Google Brain Team)
 - [tensor2tensor](https://github.com/tensorflow/tensor2tensor) - A library for generalized sequence to sequence models (official code)
 
 ## Author
