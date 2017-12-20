@@ -9,7 +9,8 @@ data:
   EOS_ID: 3
 
 model:
-  num_layers: 1
+  batch_size: 4
+  num_layers: 2
   model_dim: 16
   num_heads: 2
   linear_key_dim: 10
@@ -18,13 +19,10 @@ model:
   dropout: 0.2
 
 train:
-  batch_size: 2
   learning_rate: 0.00001
   train_steps: 50000
   model_dir: 'logs/check_tiny'
   save_checkpoints_steps: 1000
   check_hook_n_iter: 100
   min_eval_frequency: 100
-
-eval:
-  batch_size: -1
+  optimizer: 'Adam'

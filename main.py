@@ -29,8 +29,12 @@ def experiment_fn(run_config, params):
 
     train_data, test_data = data_loader.make_train_and_test_set()
 
-    train_input_fn, train_input_hook = data_loader.get_dataset_batch(train_data, scope="train")
-    test_input_fn, test_input_hook = data_loader.get_dataset_batch(test_data, scope="test")
+    train_input_fn, train_input_hook = data_loader.get_dataset_batch(train_data,
+                                                                     batch_size=Config.model.batch_size,
+                                                                     scope="train")
+    test_input_fn, test_input_hook = data_loader.get_dataset_batch(test_data,
+                                                                   batch_size=Config.model.batch_size,
+                                                                   scope="test")
 
     experiment = tf.contrib.learn.Experiment(
         estimator=estimator,

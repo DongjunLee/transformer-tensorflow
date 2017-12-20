@@ -56,7 +56,7 @@ def get_dataset_batch(data, buffer_size=10000, batch_size=64, scope="train"):
 
             dataset = dataset.repeat(None)  # Infinite iterations
             dataset = dataset.shuffle(buffer_size=buffer_size)
-            dataset = dataset.batch(Config.train.batch_size)
+            dataset = dataset.batch(batch_size)
 
             iterator = dataset.make_initializable_iterator()
             next_enc, next_dec, next_target = iterator.get_next()
