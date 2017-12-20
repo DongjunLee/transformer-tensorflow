@@ -36,11 +36,14 @@ class Graph:
 
             # Positional Encoding
             with tf.variable_scope("positional-encoding"):
-                positional_encoded = positional_encoding(Config.model.model_dim, Config.data.max_seq_length, dtype=self.dtype)
+                positional_encoded = positional_encoding(Config.model.model_dim,
+                                                         Config.data.max_seq_length,
+                                                         dtype=self.dtype)
 
             # Add
             position_inputs = tf.tile(tf.range(0, Config.data.max_seq_length), [Config.model.batch_size])
-            position_inputs = tf.reshape(position_inputs, [Config.model.batch_size, Config.data.max_seq_length]) # batch_size x [0, 1, 2, ..., n]
+            position_inputs = tf.reshape(position_inputs,
+                                         [Config.model.batch_size, Config.data.max_seq_length]) # batch_size x [0, 1, 2, ..., n]
 
             if encoder:
                 embedding_inputs = embedding_encoder
