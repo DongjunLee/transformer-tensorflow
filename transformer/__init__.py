@@ -49,8 +49,10 @@ class Graph:
                 embedding_inputs = embedding_encoder
             else:
                 embedding_inputs = embedding_decoder
-            return tf.add(tf.nn.embedding_lookup(embedding_inputs, inputs),
-                          tf.nn.embedding_lookup(positional_encoded, position_inputs))
+            encoded_inputs = tf.add(tf.nn.embedding_lookup(embedding_inputs, inputs),
+                             tf.nn.embedding_lookup(positional_encoded, position_inputs))
+
+            return tf.nn.dropout(encoded_inputs, 1.0 - Config.model.dropout)
 
     def build_encoder(self, encoder_emb_inp, reuse=False):
         with tf.variable_scope("Encoder", reuse=reuse):

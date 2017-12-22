@@ -26,7 +26,8 @@ class Attention:
                  masked=False,
                  linear_key_dim=50,
                  linear_value_dim=50,
-                 model_dim=100):
+                 model_dim=100,
+                 dropout=0.2):
 
         assert linear_key_dim % num_heads == 0
         assert linear_value_dim % num_heads == 0
@@ -36,14 +37,16 @@ class Attention:
         self.linear_key_dim = linear_key_dim
         self.linear_value_dim = linear_value_dim
         self.model_dim = model_dim
+        self.dropout = dropout
 
     def multi_head(self, q, k, v):
         q, k, v = self._linear_projection(q, k, v)
         qs, ks, vs = self._split_heads(q, k, v)
         outputs = self._scaled_dot_product(qs, ks, vs)
         output = self._concat_heads(outputs)
+        output = tf.layers.dense(output, self.model_dim)
 
-        return tf.layers.dense(output, self.model_dim)
+        return tf.nn.dropout(output, 1.0 - self.dropout)
 
     def _linear_projection(self, q, k, v):
         q = tf.layers.dense(q, self.linear_key_dim, use_bias=False)

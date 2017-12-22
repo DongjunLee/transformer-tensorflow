@@ -15,7 +15,8 @@ class Decoder:
                  linear_key_dim=50,
                  linear_value_dim=50,
                  model_dim=50,
-                 ffn_dim=50):
+                 ffn_dim=50,
+                 dropout=0.2):
 
         self.num_layers = num_layers
         self.num_heads = num_heads
@@ -23,6 +24,7 @@ class Decoder:
         self.linear_value_dim = linear_value_dim
         self.model_dim = model_dim
         self.ffn_dim = ffn_dim
+        self.dropout = dropout
 
     def build(self, decoder_inputs, encoder_outputs):
         o1 = tf.identity(decoder_inputs)
@@ -46,7 +48,8 @@ class Decoder:
                                     masked=False,  # Not implemented yet
                                     linear_key_dim=self.linear_key_dim,
                                     linear_value_dim=self.linear_value_dim,
-                                    model_dim=self.model_dim)
+                                    model_dim=self.model_dim,
+                                    dropout=self.dropout)
             return attention.multi_head(q, k, v)
 
     def _add_and_norm(self, x, sub_layer_x, num=0):
@@ -59,12 +62,14 @@ class Decoder:
                                     masked=False,
                                     linear_key_dim=self.linear_key_dim,
                                     linear_value_dim=self.linear_value_dim,
-                                    model_dim=self.model_dim)
+                                    model_dim=self.model_dim,
+                                    dropout=self.dropout)
             return attention.multi_head(q, k, v)
 
     def _positional_feed_forward(self, output):
         with tf.variable_scope("feed-forward"):
             ffn = FFN(w1_dim=self.ffn_dim,
-                      w2_dim=self.model_dim)
+                      w2_dim=self.model_dim,
+                      dropout=self.dropout)
             return ffn.dense_relu_dense(output)
 
