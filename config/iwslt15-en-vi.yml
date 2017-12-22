@@ -1,7 +1,7 @@
 data:
   base_path: 'data/'
-  raw_data_path: 'tiny_kor_eng'
-  processed_path: 'processed_tiny_kor_eng'
+  raw_data_path: 'iwslt15_en-vi'
+  processed_path: 'processed_iwslt15_en-vi'
   word_threshold: 1
 
   PAD_ID: 0
@@ -10,21 +10,21 @@ data:
   EOS_ID: 3
 
 model:
-  batch_size: 4
-  num_layers: 2
-  model_dim: 32
+  batch_size: 32
+  num_layers: 3
+  model_dim: 256
   num_heads: 4
-  linear_key_dim: 20
-  linear_value_dim: 24
-  ffn_dim: 30
-  dropout: 0.1
+  linear_key_dim: 32
+  linear_value_dim: 32
+  ffn_dim: 512
+  dropout: 0.2
 
 train:
   learning_rate: 0.0001
   optimizer: 'Adam'
 
-  train_steps: 15000
-  model_dir: 'logs/check_tiny'
+  train_steps: 100000
+  model_dir: 'logs/iwslt15_en-vi'
 
   save_checkpoints_steps: 1000
   check_hook_n_iter: 100
