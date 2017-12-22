@@ -53,12 +53,8 @@ def get_dataset_batch(data, buffer_size=10000, batch_size=64, scope="train"):
             # Build dataset iterator
             dataset = tf.data.Dataset.from_tensor_slices(
                 (enc_placeholder, dec_placeholder, target_placeholder))
-
-            if scope == "train":
-                dataset = dataset.repeat(None)  # Infinite iterations
-            else:
-                dataset = dataset.repeat(1)  # one Epoch
-
+            # Infinite iterations of None or of one Epoch
+            dataset = dataset.repeat(None if scope == "train" else 1)
             dataset = dataset.shuffle(buffer_size=buffer_size)
             dataset = dataset.batch(batch_size)
 
@@ -93,9 +89,8 @@ def prepare_dataset(questions, answers):
     test_ids = random.sample([i for i in range(len(questions))], Config.data.testset_size)
 
     filenames = ['train.enc', 'train.dec', 'test.enc', 'test.dec']
-    files = []
-    for filename in filenames:
-        files.append(open(os.path.join(Config.data.base_path, Config.data.processed_path, filename), 'wb'))
+    filepath = os.path.join(Config.data.base_path, Config.data.processed_path)
+    files = [open(os.path.join(filepath, filename), 'wb') for filename in filenames]
 
     for i in tqdm(range(len(questions))):
 
@@ -124,10 +119,7 @@ def make_dir(path):
 def basic_tokenizer(line, normalize_digits=True):
     """ A basic tokenizer to tokenize text into tokens.
     Feel free to change this to suit your need. """
-    line = re.sub('<u>', '', line)
-    line = re.sub('</u>', '', line)
-    line = re.sub('\[', '', line)
-    line = re.sub('\]', '', line)
+    line = line.replace('<u>', '').replace('</u>', '').replace('\[', '').replace('\]', '')
     words = []
     _WORD_SPLIT = re.compile("([.,!?\"'-<>:;)(])")
     _DIGIT_RE = re.compile(r"\d")
@@ -199,26 +191,19 @@ def sentence2id(vocab, line):
 def token2id(data, mode):
     """ Convert all the tokens in the data into their corresponding
     index in the vocabulary. """
-    vocab_path = 'vocab'
-    if mode == "enc":
-        vocab_path = 'source_' + vocab_path
-    elif mode == "dec":
-        vocab_path = 'target_' + vocab_path
+    prefix = {'enc': 'source_', 'dec': 'target_'}.get(mode, '')
+    vocab = load_vocab(prefix + 'vocab')
 
+    filepath = os.path.join(Config.data.base_path, Config.data.processed_path)
     in_path = data + '.' + mode
     out_path = data + '_ids.' + mode
-
-    vocab = load_vocab(vocab_path)
-    in_file = open(os.path.join(Config.data.base_path, Config.data.raw_data_path, in_path), 'rb')
-    out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, out_path), 'wb')
+    in_file = open(os.path.join(filepath, in_path), 'rb')
+    out_file = open(os.path.join(filepath, out_path), 'wb')
 
     lines = in_file.read().decode('utf-8').splitlines()
     for line in tqdm(lines):
-        if mode == 'dec':  # we only care about '<s>' and </s> in decoder
-            ids = [vocab['<s>']]
-        else:
-            ids = []
-
+        # we only care about '<s>' and </s> in decoder
+        ids = [vocab['<s>']] if mode == 'dec' else []
         sentence_ids = sentence2id(vocab, line)
         ids.extend(sentence_ids)
         if mode == 'dec':
@@ -227,14 +212,15 @@ def token2id(data, mode):
         out_file.write(b' '.join(str(id_).encode('cp1252') for id_ in ids) + b'\n')
 
 def make_decoder_seq(enc_fname, dec_fname):
-    enc_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'rb')
-    dec_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'rb')
+    filepath = os.path.join(Config.data.base_path, Config.data.processed_path)
+    enc_file = open(os.path.join(filepath, enc_fname), 'rb')
+    dec_file = open(os.path.join(filepath, dec_fname), 'rb')
 
     enc_data = enc_file.read().decode('utf-8').splitlines()
     dec_data = dec_file.read().decode('utf-8').splitlines()
 
-    enc_out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'wb')
-    dec_out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'wb')
+    enc_out_file = open(os.path.join(filepath, enc_fname), 'wb')
+    dec_out_file = open(os.path.join(filepath, dec_fname), 'wb')
 
     for enc, dec in zip(enc_data, dec_data):
         seq_dec = []
@@ -254,9 +240,7 @@ def prepare_raw_data():
     print('Preparing raw data into train set and test set ...')
 
     data_type = Config.data.get('type', 'cornell-movie')
-    if data_type == "cornell-movie":
-        pass
-    else:
+    if data_type != "cornell-movie":
         raise ValueError(f"Unknown data_type, {data_type}")
 
     prepare_dataset(questions, answers)
@@ -303,8 +287,9 @@ def make_train_and_test_set(shuffle=True):
                 (test_enc, test_dec, test_y))
 
 def load_data(enc_fname, dec_fname, train=True):
-    enc_input_data = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'r')
-    dec_input_data = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'r')
+    filepath = os.path.join(Config.data.base_path, Config.data.processed_path)
+    enc_input_data = open(os.path.join(filepath, enc_fname), 'r')
+    dec_input_data = open(os.path.join(filepath, dec_fname), 'r')
 
     enc_data, dec_data, target_data = [], [], []
     for e_line, d_line in tqdm(zip(enc_input_data.readlines(), dec_input_data.readlines())):
@@ -317,7 +302,7 @@ def load_data(enc_fname, dec_fname, train=True):
             t_id = [int(id_) for id_ in d_line.split()]
             d_ids = [Config.data.START_ID]
 
-        if len(e_ids) == 0 or len(d_ids) == 0:
+        if 0 in (len(e_ids), len(d_ids)):
             continue
 
         if len(e_ids) <= Config.data.max_seq_length and len(d_ids) < Config.data.max_seq_length:
@@ -340,9 +325,10 @@ def _pad_input(input_, size):
 def set_max_seq_length(dataset_fnames):
 
     max_seq_length = Config.data.get('max_seq_length', 10)
+    filepath = os.path.join(Config.data.base_path, Config.data.processed_path)
 
     for fname in dataset_fnames:
-        input_data = open(os.path.join(Config.data.base_path, Config.data.processed_path, fname), 'r')
+        input_data = open(os.path.join(filepath, fname), 'r')
 
         for line in input_data.readlines():
             ids = [int(id_) for id_ in line.split()]
