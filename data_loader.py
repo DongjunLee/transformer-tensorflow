@@ -236,7 +236,7 @@ def make_decoder_seq(enc_fname, dec_fname):
     enc_out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, enc_fname), 'wb')
     dec_out_file = open(os.path.join(Config.data.base_path, Config.data.processed_path, dec_fname), 'wb')
 
-    for enc, dec in zip(enc_data, dec_data):
+    for enc, dec in tqdm(zip(enc_data, dec_data)):
         seq_dec = []
 
         for token in dec.split():
