@@ -45,7 +45,7 @@ class Decoder:
     def _masked_self_attention(self, q, k, v):
         with tf.variable_scope("masked-self-attention"):
             attention = Attention(num_heads=self.num_heads,
-                                    masked=False,  # Not implemented yet
+                                    masked=True,  # Not implemented yet
                                     linear_key_dim=self.linear_key_dim,
                                     linear_value_dim=self.linear_value_dim,
                                     model_dim=self.model_dim,
