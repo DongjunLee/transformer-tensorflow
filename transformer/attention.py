@@ -58,7 +58,7 @@ class Attention:
 
         def split_last_dimension_then_transpose(tensor, num_heads, dim):
             t_shape = tensor.get_shape().as_list()
-            tensor = tf.reshape(tensor, t_shape[:-1] + [num_heads, dim // num_heads])
+            tensor = tf.reshape(tensor, [-1] + t_shape[1:-1] + [num_heads, dim // num_heads])
             return tf.transpose(tensor, [0, 2, 1, 3]) # [batch_size, num_heads, max_seq_len, dim]
 
         qs = split_last_dimension_then_transpose(q, self.num_heads, self.linear_key_dim)
@@ -90,6 +90,6 @@ class Attention:
             tensor = tf.transpose(tensor, [0, 2, 1, 3]) # [batch_size, max_seq_len, num_heads, dim]
             t_shape = tensor.get_shape().as_list()
             num_heads, dim = t_shape[-2:]
-            return tf.reshape(tensor, t_shape[:-2] + [num_heads * dim])
+            return tf.reshape(tensor, [-1] + t_shape[1:-2] + [num_heads * dim])
 
         return transpose_then_concat_last_two_dimenstion(outputs)

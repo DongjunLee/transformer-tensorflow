@@ -41,9 +41,10 @@ class Graph:
                                                          dtype=self.dtype)
 
             # Add
-            position_inputs = tf.tile(tf.range(0, Config.data.max_seq_length), [Config.model.batch_size])
+            batch_size = tf.shape(inputs)[0]
+            position_inputs = tf.tile(tf.range(0, Config.data.max_seq_length), [batch_size])
             position_inputs = tf.reshape(position_inputs,
-                                         [Config.model.batch_size, Config.data.max_seq_length]) # batch_size x [0, 1, 2, ..., n]
+                                         [batch_size, Config.data.max_seq_length]) # batch_size x [0, 1, 2, ..., n]
 
             if encoder:
                 embedding_inputs = embedding_encoder

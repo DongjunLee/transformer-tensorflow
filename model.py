@@ -26,7 +26,6 @@ class Model:
         if self.mode == tf.estimator.ModeKeys.TRAIN:
             return tf.estimator.EstimatorSpec(
                 mode=mode,
-                # predictions=self.predictions,
                 loss=self.loss,
                 train_op=self.train_op)
         else:
@@ -39,17 +38,18 @@ class Model:
         self.encoder_inputs = features["enc_inputs"]
         self.targets = labels
 
-        start_tokens = tf.fill([Config.model.batch_size, 1], Config.data.START_ID)
+        self.batch_size = tf.shape(self.encoder_inputs)[0]
+        start_tokens = tf.fill([self.batch_size, 1], Config.data.START_ID)
 
         if self.mode == tf.estimator.ModeKeys.TRAIN:
             # slice last pad token
             target_slice_last_1 = tf.slice(self.targets, [0, 0],
-                    [Config.model.batch_size, Config.data.max_seq_length-1])
+                    [self.batch_size, Config.data.max_seq_length-1])
             self.decoder_inputs = tf.concat([start_tokens, target_slice_last_1], axis=1)
 
             tf.identity(self.decoder_inputs[0], 'train/dec_0')
         else:
-            pad_tokens = tf.zeros([Config.model.batch_size, Config.data.max_seq_length-1], dtype=tf.int32) # 0: PAD ID
+            pad_tokens = tf.zeros([self.batch_size, Config.data.max_seq_length-1], dtype=tf.int32) # 0: PAD ID
             self.decoder_inputs = tf.concat([start_tokens, pad_tokens], axis=1)
 
             tf.identity(self.decoder_inputs[0], 'test/dec_0')
@@ -69,9 +69,9 @@ class Model:
                 next_token = tf.slice(
                         tf.argmax(logits, axis=2, output_type=tf.int32),
                         [0, decoder_index-1],
-                        [Config.model.batch_size, 1])
-                left_zero_pads = tf.zeros([Config.model.batch_size, decoder_index], dtype=tf.int32)
-                right_zero_pads = tf.zeros([Config.model.batch_size, (Config.data.max_seq_length-decoder_index-1)], dtype=tf.int32)
+                        [self.batch_size, 1])
+                left_zero_pads = tf.zeros([self.batch_size, decoder_index], dtype=tf.int32)
+                right_zero_pads = tf.zeros([self.batch_size, (Config.data.max_seq_length-decoder_index-1)], dtype=tf.int32)
                 next_token = tf.concat((left_zero_pads, next_token, right_zero_pads), axis=1)
 
                 return inputs + next_token
@@ -91,9 +91,9 @@ class Model:
 
 	    # slice start_token
             decoder_input_start_1 = tf.slice(decoder_inputs, [0, 1],
-                    [Config.model.batch_size, Config.data.max_seq_length-1])
+                    [self.batch_size, Config.data.max_seq_length-1])
             self.predictions = tf.concat(
-                    [decoder_input_start_1, tf.zeros([Config.model.batch_size, 1], dtype=tf.int32)], axis=1)
+                    [decoder_input_start_1, tf.zeros([self.batch_size, 1], dtype=tf.int32)], axis=1)
 
     def _build_loss(self, logits):
         with tf.variable_scope('loss'):
@@ -146,7 +146,7 @@ class Model:
                     print("label: ", labels[0][0])
                     print("prediction: ", predictions[0])
 
-                return nltk.translate.bleu_score.corpus_bleu(labels, predictions)
+                return float(nltk.translate.bleu_score.corpus_bleu(labels, predictions))
 
             score = tf.py_func(_nltk_blue_score, (labels, predictions), tf.float64)
             return tf.metrics.mean(score * 100.0)
