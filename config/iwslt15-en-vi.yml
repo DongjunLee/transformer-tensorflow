@@ -13,11 +13,11 @@ data:
 model:
   batch_size: 32
   num_layers: 3
-  model_dim: 256
+  model_dim: 128
   num_heads: 4
   linear_key_dim: 32
   linear_value_dim: 32
-  ffn_dim: 512
+  ffn_dim: 256
   dropout: 0.2
 
 train:
@@ -29,7 +29,7 @@ train:
 
   save_checkpoints_steps: 1000
   check_hook_n_iter: 100
-  min_eval_frequency: 100
+  min_eval_frequency: 2000
 
-  print_verbose: True
+  print_verbose: False
   debug: False
