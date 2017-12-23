@@ -1,0 +1,4 @@
+__pycache__/
+logs/
+*/__pycache__/
+notebooks/.ipynb_checkpoints/
