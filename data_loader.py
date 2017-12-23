@@ -233,7 +233,8 @@ def process_data():
 def make_train_and_test_set(shuffle=True):
     print("make Training data and Test data Start....")
 
-    set_max_seq_length(['train_ids.enc', 'train_ids.dec', 'test_ids.enc', 'test_ids.dec'])
+    if Config.data.get('max_seq_length', None) is None:
+        set_max_seq_length(['train_ids.enc', 'train_ids.dec', 'test_ids.enc', 'test_ids.dec'])
 
     train_enc, train_dec = load_data('train_ids.enc', 'train_ids.dec')
     test_enc, test_dec = load_data('test_ids.enc', 'test_ids.dec', train=False)

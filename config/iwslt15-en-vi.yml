@@ -3,6 +3,7 @@ data:
   raw_data_path: 'iwslt15_en-vi'
   processed_path: 'processed_iwslt15_en-vi'
   word_threshold: 1
+  max_seq_length: 200
 
   PAD_ID: 0
   UNK_ID: 1
