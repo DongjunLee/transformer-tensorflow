@@ -48,10 +48,17 @@ def experiment_fn(run_config, params):
             variables=['train/dec_0', 'train/target_0', 'train/pred_0'],
             rev_vocab=get_rev_vocab(target_vocab),
             every_n_iter=Config.train.check_hook_n_iter))
-    # if Config.train.debug:
-        # train_hooks.append(tf_debug.LocalCLIDebugHook())
+    if Config.train.debug:
+        train_hooks.append(tf_debug.LocalCLIDebugHook())
 
     eval_hooks = [test_input_hook]
+    eval_hooks.append(hook.print_variables(
+            variables=[
+                'test/dec_1', 'test/dec_2', 'test/dec_3', 'test/dec_4', 'test/dec_5',
+                'test/pred_1', 'test/pred_2', 'test/pred_3', 'test/pred_4', 'test/pred_5'
+            ],
+            rev_vocab=get_rev_vocab(target_vocab),
+            every_n_iter=Config.train.check_hook_n_iter))
     if Config.train.debug:
         eval_hooks.append(tf_debug.LocalCLIDebugHook())
 

@@ -49,6 +49,7 @@ class Graph:
                 embedding_inputs = embedding_encoder
             else:
                 embedding_inputs = embedding_decoder
+
             encoded_inputs = tf.add(tf.nn.embedding_lookup(embedding_inputs, inputs),
                              tf.nn.embedding_lookup(positional_encoded, position_inputs))
 
@@ -78,8 +79,7 @@ class Graph:
 
     def build_output(self, decoder_outputs, reuse=False):
         with tf.variable_scope("Output", reuse=reuse):
-            flatted_output = tf.reshape(decoder_outputs, [Config.model.batch_size, -1])
-            logits = tf.layers.dense(flatted_output, Config.data.target_vocab_size)
+            logits = tf.layers.dense(decoder_outputs, Config.data.target_vocab_size)
 
-        self.train_predictions = tf.argmax(logits[0], axis=0, name="train/pred_0")
+        self.train_predictions = tf.argmax(logits[0], axis=1, name="train/pred_0")
         return logits

@@ -36,12 +36,23 @@ class Model:
                 eval_metric_ops=self._build_metric())
 
     def _init_placeholder(self, features, labels):
-        if type(features) == dict:
-            self.encoder_inputs = features["enc_inputs"]
-            self.decoder_inputs = features["dec_inputs"]
+        self.encoder_inputs = features["enc_inputs"]
+        self.targets = labels
 
-        if self.mode != tf.estimator.ModeKeys.PREDICT:
-            self.targets = labels
+        start_tokens = tf.fill([Config.model.batch_size, 1], Config.data.START_ID)
+
+        if self.mode == tf.estimator.ModeKeys.TRAIN:
+            # slice last pad token
+            target_slice_last_1 = tf.slice(self.targets, [0, 0],
+                    [Config.model.batch_size, Config.data.max_seq_length-1])
+            self.decoder_inputs = tf.concat([start_tokens, target_slice_last_1], axis=1)
+
+            tf.identity(self.decoder_inputs[0], 'train/dec_0')
+        else:
+            pad_tokens = tf.zeros([Config.model.batch_size, Config.data.max_seq_length-1], dtype=tf.int32) # 0: PAD ID
+            self.decoder_inputs = tf.concat([start_tokens, pad_tokens], axis=1)
+
+            tf.identity(self.decoder_inputs[0], 'test/dec_0')
 
     def build_graph(self):
         graph = transformer.Graph(self.mode)
@@ -53,7 +64,12 @@ class Model:
             self._build_optimizer()
         else:
             def _filled_next_token(inputs, logits, decoder_index):
-                next_token = tf.reshape(tf.argmax(logits, axis=1, output_type=tf.int32), [Config.model.batch_size, 1])
+                tf.identity(tf.argmax(logits[0], axis=1, output_type=tf.int32), f'test/pred_{decoder_index}')
+
+                next_token = tf.slice(
+                        tf.argmax(logits, axis=2, output_type=tf.int32),
+                        [0, decoder_index-1],
+                        [Config.model.batch_size, 1])
                 left_zero_pads = tf.zeros([Config.model.batch_size, decoder_index], dtype=tf.int32)
                 right_zero_pads = tf.zeros([Config.model.batch_size, (Config.data.max_seq_length-decoder_index-1)], dtype=tf.int32)
                 next_token = tf.concat((left_zero_pads, next_token, right_zero_pads), axis=1)
@@ -62,7 +78,9 @@ class Model:
 
             encoder_outputs = graph.encoder_outputs
             decoder_inputs = _filled_next_token(self.decoder_inputs, output, 1)
-            sequence_logits = tf.reshape(output, [-1, 1, Config.data.target_vocab_size])
+
+            tf.identity(decoder_inputs[0], 'test/dec_1')
+            tf.identity(tf.argmax(output[0], axis=1, output_type=tf.int32), 'test/pred_1')
 
             # predict output with loop. [encoder_outputs, decoder_inputs (filled next token)]
             for i in range(2, Config.data.max_seq_length):
@@ -71,35 +89,31 @@ class Model:
                 next_output = graph.build_output(decoder_outputs, reuse=True)
 
                 decoder_inputs = _filled_next_token(decoder_inputs, next_output, i)
-                sequence_logits = tf.concat((sequence_logits, tf.reshape(next_output, [-1, 1, Config.data.target_vocab_size])),
-                                            axis=1)
+                tf.identity(decoder_inputs[0], f'test/dec_{i}')
+                tf.identity(tf.argmax(next_output[0], axis=1, output_type=tf.int32), f'test/pred_{i}')
 
-            self._build_loss(sequence_logits)
-            self.predictions = decoder_inputs
+            self._build_loss(next_output)
+
+	    # slice start_token
+            decoder_input_start_1 = tf.slice(decoder_inputs, [0, 1],
+                    [Config.model.batch_size, Config.data.max_seq_length-1])
+            self.predictions = tf.concat(
+                    [decoder_input_start_1, tf.zeros([Config.model.batch_size, 1], dtype=tf.int32)], axis=1)
 
     def _build_loss(self, logits):
         with tf.variable_scope('loss'):
-            if self.mode == tf.estimator.ModeKeys.TRAIN:
-                self.loss = tf.losses.sparse_softmax_cross_entropy(
-                            labels=self.targets,
-                            logits=logits,
-                            scope="cross-entropy")
-            else:
-                # Slice start_token (decoder_inputs have start_token always)
-                targets = tf.slice(self.targets, [0, 1],
-                                   [Config.model.batch_size, Config.data.max_seq_length-1])
-                target_lengths = tf.reduce_sum(
-                        tf.to_int32(tf.not_equal(self.targets, Config.data.PAD_ID)), 1) - 1
-                weight_masks = tf.sequence_mask(
-                        lengths=target_lengths,
-                        maxlen=Config.data.max_seq_length - 1,
-                        dtype=self.dtype, name='masks')
+            target_lengths = tf.reduce_sum(
+                    tf.to_int32(tf.not_equal(self.targets, Config.data.PAD_ID)), 1)
+            weight_masks = tf.sequence_mask(
+                    lengths=target_lengths,
+                    maxlen=Config.data.max_seq_length,
+                    dtype=self.dtype, name='masks')
 
-                self.loss = tf.contrib.seq2seq.sequence_loss(
-                        logits=logits,
-                        targets=targets,
-                        weights=weight_masks,
-                        name="sequence-loss")
+            self.loss = tf.contrib.seq2seq.sequence_loss(
+                    logits=logits,
+                    targets=self.targets,
+                    weights=weight_masks,
+                    name="sequence-loss")
 
     def _build_optimizer(self):
         self.train_op = tf.contrib.layers.optimize_loss(
@@ -140,7 +154,7 @@ class Model:
                 return nltk.translate.bleu_score.corpus_bleu(labels, predictions)
 
             score = tf.py_func(_nltk_blue_score, (labels, predictions), tf.float64)
-            return tf.metrics.mean(score * 100)
+            return tf.metrics.mean(score * 100.0)
 
         return {
             "bleu": blue_score(self.targets, self.predictions)
