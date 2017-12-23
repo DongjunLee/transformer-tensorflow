@@ -79,9 +79,6 @@ class Model:
             encoder_outputs = graph.encoder_outputs
             decoder_inputs = _filled_next_token(self.decoder_inputs, output, 1)
 
-            tf.identity(decoder_inputs[0], 'test/dec_1')
-            tf.identity(tf.argmax(output[0], axis=1, output_type=tf.int32), 'test/pred_1')
-
             # predict output with loop. [encoder_outputs, decoder_inputs (filled next token)]
             for i in range(2, Config.data.max_seq_length):
                 decoder_emb_inp = graph.build_embed(decoder_inputs, encoder=False, reuse=True)
@@ -89,8 +86,6 @@ class Model:
                 next_output = graph.build_output(decoder_outputs, reuse=True)
 
                 decoder_inputs = _filled_next_token(decoder_inputs, next_output, i)
-                tf.identity(decoder_inputs[0], f'test/dec_{i}')
-                tf.identity(tf.argmax(next_output[0], axis=1, output_type=tf.int32), f'test/pred_{i}')
 
             self._build_loss(next_output)
 
