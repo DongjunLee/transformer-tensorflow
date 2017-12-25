@@ -16,6 +16,8 @@ TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1
 
 ## Project Structure
 
+init Project by [hb-base](https://github.com/hb-research/hb-base)
+
     .
     ├── config                  # Config files (.yml, .json) using with hb-config
     ├── data                    # dataset path
@@ -98,6 +100,15 @@ Then, pre-process raw data.
 Finally, start train and evaluate model
 
 ```python main.py --config check-tiny --mode train_and_evaluate```
+
+
+Or, you can use [IWSLT'15 English-Vietnamese](https://nlp.stanford.edu/projects/nmt/) dataset.
+
+```
+sh prepare-iwslt15.en-vi.sh                                        # download dataset
+python data_loader.py --config iwslt15-en-vi                       # preprocessing
+python main.py --config iwslt15-en-vi --mode train_and_evalueate   # start training
+```
 
 ### Experiments modes
 
