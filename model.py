@@ -20,19 +20,20 @@ class Model:
         self.mode = mode
         self.params = params
 
+        self.loss, self.train_op, self.metrics, self.predictions = None, None, None, None
         self._init_placeholder(features, labels)
         self.build_graph()
 
-        if self.mode == tf.estimator.ModeKeys.TRAIN:
-            return tf.estimator.EstimatorSpec(
-                mode=mode,
-                loss=self.loss,
-                train_op=self.train_op)
-        else:
-            return tf.estimator.EstimatorSpec(
-                mode=mode,
-                loss=self.loss,
-                eval_metric_ops=self._build_metric())
+        # train mode: required loss and train_op
+        # eval mode: required loss
+        # predict mode: required predictions
+
+        return tf.estimator.EstimatorSpec(
+            mode=mode,
+            loss=self.loss,
+            train_op=self.train_op,
+            eval_metric_ops=self.metrics,
+            predictions={"prediction": self.predictions})
 
     def _init_placeholder(self, features, labels):
         self.encoder_inputs = features["enc_inputs"]
@@ -56,44 +57,14 @@ class Model:
 
     def build_graph(self):
         graph = transformer.Graph(self.mode)
-        output = graph.build(encoder_inputs=self.encoder_inputs,
-                    decoder_inputs=self.decoder_inputs)
+        output, predictions = graph.build(encoder_inputs=self.encoder_inputs,
+                             decoder_inputs=self.decoder_inputs)
 
-        if self.mode == tf.estimator.ModeKeys.TRAIN:
+        self.predictions = predictions
+        if self.mode != tf.estimator.ModeKeys.PREDICT:
             self._build_loss(output)
             self._build_optimizer()
-        else:
-            def _filled_next_token(inputs, logits, decoder_index):
-                tf.identity(tf.argmax(logits[0], axis=1, output_type=tf.int32), f'test/pred_{decoder_index}')
-
-                next_token = tf.slice(
-                        tf.argmax(logits, axis=2, output_type=tf.int32),
-                        [0, decoder_index-1],
-                        [self.batch_size, 1])
-                left_zero_pads = tf.zeros([self.batch_size, decoder_index], dtype=tf.int32)
-                right_zero_pads = tf.zeros([self.batch_size, (Config.data.max_seq_length-decoder_index-1)], dtype=tf.int32)
-                next_token = tf.concat((left_zero_pads, next_token, right_zero_pads), axis=1)
-
-                return inputs + next_token
-
-            encoder_outputs = graph.encoder_outputs
-            decoder_inputs = _filled_next_token(self.decoder_inputs, output, 1)
-
-            # predict output with loop. [encoder_outputs, decoder_inputs (filled next token)]
-            for i in range(2, Config.data.max_seq_length):
-                decoder_emb_inp = graph.build_embed(decoder_inputs, encoder=False, reuse=True)
-                decoder_outputs = graph.build_decoder(decoder_emb_inp, encoder_outputs, reuse=True)
-                next_output = graph.build_output(decoder_outputs, reuse=True)
-
-                decoder_inputs = _filled_next_token(decoder_inputs, next_output, i)
-
-            self._build_loss(next_output)
-
-	    # slice start_token
-            decoder_input_start_1 = tf.slice(decoder_inputs, [0, 1],
-                    [self.batch_size, Config.data.max_seq_length-1])
-            self.predictions = tf.concat(
-                    [decoder_input_start_1, tf.zeros([self.batch_size, 1], dtype=tf.int32)], axis=1)
+            self._build_metric()
 
     def _build_loss(self, logits):
         with tf.variable_scope('loss'):
@@ -151,6 +122,6 @@ class Model:
             score = tf.py_func(_nltk_blue_score, (labels, predictions), tf.float64)
             return tf.metrics.mean(score * 100.0)
 
-        return {
+        self.metrics = {
             "bleu": blue_score(self.targets, self.predictions)
         }
