@@ -10,7 +10,7 @@ data:
   EOS_ID: 3
 
 model:
-  batch_size: 4
+  batch_size: 3
   num_layers: 2
   model_dim: 32
   num_heads: 4
@@ -23,12 +23,15 @@ train:
   learning_rate: 0.0001
   optimizer: 'Adam'
 
-  train_steps: 15000
+  train_steps: 30000
   model_dir: 'logs/check_tiny'
 
   save_checkpoints_steps: 1000
   check_hook_n_iter: 100
-  min_eval_frequency: 100
+  min_eval_frequency: 1
 
   print_verbose: True
   debug: False
+
+slack:
+  webhook_url: ""

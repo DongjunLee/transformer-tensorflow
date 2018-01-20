@@ -1,6 +1,7 @@
 #-- coding: utf-8 -*-
 
 import argparse
+import atexit
 import logging
 
 from hbconfig import Config
@@ -10,6 +11,7 @@ from tensorflow.python import debug as tf_debug
 import data_loader
 from model import Model
 import hook
+import utils
 
 
 
@@ -25,8 +27,8 @@ def experiment_fn(run_config, params):
     source_vocab = data_loader.load_vocab("source_vocab")
     target_vocab = data_loader.load_vocab("target_vocab")
 
-    Config.data.rev_source_vocab = get_rev_vocab(source_vocab)
-    Config.data.rev_target_vocab = get_rev_vocab(target_vocab)
+    Config.data.rev_source_vocab = utils.get_rev_vocab(source_vocab)
+    Config.data.rev_target_vocab = utils.get_rev_vocab(target_vocab)
     Config.data.source_vocab_size = len(source_vocab)
     Config.data.target_vocab_size = len(target_vocab)
 
@@ -42,11 +44,11 @@ def experiment_fn(run_config, params):
     if Config.train.print_verbose:
         train_hooks.append(hook.print_variables(
             variables=['train/enc_0'],
-            rev_vocab=get_rev_vocab(source_vocab),
+            rev_vocab=utils.get_rev_vocab(source_vocab),
             every_n_iter=Config.train.check_hook_n_iter))
         train_hooks.append(hook.print_variables(
             variables=['train/target_0', 'train/pred_0'],
-            rev_vocab=get_rev_vocab(target_vocab),
+            rev_vocab=utils.get_rev_vocab(target_vocab),
             every_n_iter=Config.train.check_hook_n_iter))
     if Config.train.debug:
         train_hooks.append(tf_debug.LocalCLIDebugHook())
@@ -65,12 +67,6 @@ def experiment_fn(run_config, params):
         eval_hooks=eval_hooks
     )
     return experiment
-
-
-def get_rev_vocab(vocab):
-    if vocab is None:
-        return None
-    return {idx: key for key, idx in vocab.items()}
 
 
 def main(mode):
@@ -100,7 +96,15 @@ if __name__ == '__main__':
 
     tf.logging._logger.setLevel(logging.INFO)
 
+    # Print Config setting
     Config(args.config)
     print("Config: ", Config)
+    if Config.get("description", None):
+        print("Config Description")
+        for key, value in Config.description.items():
+            print(f" - {key}: {value}")
+
+    # After terminated Notification to Slack
+    atexit.register(utils.send_message_to_slack, config_name=args.config)
 
     main(args.mode)

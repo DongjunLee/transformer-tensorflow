@@ -33,3 +33,6 @@ train:
 
   print_verbose: False
   debug: False
+
+slack:
+  webhook_url: ""

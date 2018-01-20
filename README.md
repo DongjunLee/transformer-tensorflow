@@ -12,6 +12,7 @@ TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1
 - [hb-config](https://github.com/hb-research/hb-config) (Singleton Config)
 - nltk (tokenizer and blue score)
 - tqdm (progress bar)
+- [Slack Incoming Webhook URL](https://my.slack.com/services/new/incoming-webhook/)
 
 
 ## Project Structure
@@ -82,6 +83,8 @@ train:
   print_verbose: True
   debug: False
   
+slack:
+  webhook_url: ""  # after training notify you using slack-webhook
 ```
 
 * debug mode : using [tfdbg](https://www.tensorflow.org/programmers_guide/debugger)
