@@ -32,13 +32,12 @@ init Project by [hb-base](https://github.com/hb-research/hb-base)
     ├── data_loader.py          # raw_date -> precossed_data -> generate_batch (using Dataset)
     ├── hook.py                 # training or test hook feature (eg. print_variables)
     ├── main.py                 # define experiment_fn
-    └── model.py                # define EstimatorSpec      
+    └── model.py                # define EstimatorSpec
 
 Reference : [hb-config](https://github.com/hb-research/hb-config), [Dataset](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#from_generator), [experiments_fn](https://www.tensorflow.org/api_docs/python/tf/contrib/learn/Experiment), [EstimatorSpec](https://www.tensorflow.org/api_docs/python/tf/estimator/EstimatorSpec)
 
 ## Todo
 
-- Implements Multi-Head Masked opt
 - Train and evaluate with 'WMT German-English (2016)' dataset
 
 ## Config
