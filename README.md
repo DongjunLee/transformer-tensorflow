@@ -1,9 +1,8 @@
-# transformer
+# transformer [![hb-research](https://img.shields.io/badge/hb--research-experiment-green.svg?style=flat&colorA=448C57&colorB=555555)](https://github.com/hb-research)
 
 TensorFlow implementation of [Attention Is All You Need](https://arxiv.org/abs/1706.03762). (2017. 6)
 
 ![images](images/transformer-architecture.png)
-
 
 ## Requirements
 
