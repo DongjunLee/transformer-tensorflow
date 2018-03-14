@@ -31,9 +31,9 @@ class Encoder:
 
         for i in range(1, self.num_layers+1):
             with tf.variable_scope(f"layer-{i}"):
-                o2 = self._add_and_norm(o1, self._self_attention(q=encoder_inputs,
-                                                                 k=encoder_inputs,
-                                                                 v=encoder_inputs), num=1)
+                o2 = self._add_and_norm(o1, self._self_attention(q=o1,
+                                                                 k=o1,
+                                                                 v=o1), num=1)
                 o3 = self._add_and_norm(o2, self._positional_feed_forward(o2), num=2)
                 o1 = tf.identity(o3)
 

@@ -31,9 +31,9 @@ class Decoder:
 
         for i in range(1, self.num_layers+1):
             with tf.variable_scope(f"layer-{i}"):
-                o2 = self._add_and_norm(o1, self._masked_self_attention(q=decoder_inputs,
-                                                                        k=decoder_inputs,
-                                                                        v=decoder_inputs), num=1)
+                o2 = self._add_and_norm(o1, self._masked_self_attention(q=o1,
+                                                                        k=o1,
+                                                                        v=o1), num=1)
                 o3 = self._add_and_norm(o2, self._encoder_decoder_attention(q=o2,
                                                                             k=encoder_outputs,
                                                                             v=encoder_outputs), num=2)
