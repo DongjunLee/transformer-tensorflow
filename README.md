@@ -111,6 +111,27 @@ python data_loader.py --config iwslt15-en-vi                       # preprocessi
 python main.py --config iwslt15-en-vi --mode train_and_evalueate   # start training
 ```
 
+### Predict
+
+After training, you can test the model.
+
+- command
+
+```bash
+python predict.py --config {config} --src {src_sentence}
+```
+
+- example
+
+```bash
+$ python predict.py --config check-tiny --src "안녕하세요. 반갑습니다."
+
+------------------------------------
+Source: 안녕하세요. 반갑습니다.
+ > Result: Hello . I'm glad to see you . <\s> vectors . <\s> Hello locations . <\s> will . <\s> . <\s> you . <\s>
+```
+
+
 ### Experiments modes
 
 :white_check_mark: : Working  
