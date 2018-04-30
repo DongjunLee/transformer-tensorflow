@@ -75,7 +75,7 @@ class Attention:
 
         if self.masked:
             diag_vals = tf.ones_like(o2[0, 0, :, :]) # (batch_size, num_heads, query_dim, key_dim)
-            tril = tf.contrib.linalg.LinearOperatorTriL(diag_vals).to_dense() # (q_dim, k_dim)
+            tril = tf.linalg.LinearOperatorLowerTriangular(diag_vals).to_dense() # (q_dim, k_dim)
             masks = tf.tile(tf.reshape(tril, [1, 1] + tril.get_shape().as_list()),
                             [tf.shape(o2)[0], tf.shape(o2)[1], 1, 1])
             paddings = tf.ones_like(masks) * -1e9
